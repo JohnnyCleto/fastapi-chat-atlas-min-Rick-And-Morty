@@ -1,0 +1,252 @@
+<!doctype html> 
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rick & Morty Chat — FastAPI + MongoDB</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Orbitron', system-ui, sans-serif;
+        background: radial-gradient(circle at top, #2ecc71 0%, #000 100%);
+        color: #fff;
+      }
+      header {
+        background: #1abc9c;
+        padding: 16px;
+        text-align: center;
+        font-size: 1.4rem;
+        text-shadow: 0 0 6px #00ff9f;
+        letter-spacing: 1px;
+        border-bottom: 2px solid #00ff9f;
+      }
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      #characters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 16px;
+        justify-content: center;
+      }
+      .char {
+        cursor: pointer;
+        border: 2px solid #00ff9f;
+        border-radius: 12px;
+        overflow: hidden;
+        text-align: center;
+        width: 80px;
+        transition: transform .2s;
+        background: rgba(0,0,0,0.3);
+      }
+      .char img {
+        width: 100%;
+        height: 80px;
+        object-fit: cover;
+      }
+      .char span {
+        display: block;
+        font-size: 12px;
+        padding: 4px;
+        color: #b2ffea;
+      }
+      .char.selected {
+        border-color: #2ecc71;
+        transform: scale(1.1);
+      }
+
+      #messages {
+        background: rgba(0, 0, 0, 0.4);
+        border: 2px solid #00ff9f;
+        height: 50vh;
+        overflow-y: auto;
+        padding: 12px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px #00ff9f;
+        margin-bottom: 16px;
+      }
+      .msg {
+        margin: 8px 0;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: rgba(34, 255, 145, 0.15);
+        border: 1px solid #00ff9f;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .msg img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid #00ff9f;
+      }
+      .meta {
+        color: #b2ffea;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      form, .row {
+        display: flex;
+        gap: 8px;
+      }
+      .row {
+        margin-bottom: 16px;
+      }
+      input, button {
+        font-family: inherit;
+        padding: 10px 14px;
+        border: 2px solid #00ff9f;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+        font-size: 16px;
+        outline: none;
+        transition: all .2s;
+      }
+      input:focus {
+        box-shadow: 0 0 10px #00ff9f;
+      }
+      button {
+        cursor: pointer;
+        background: #00ff9f;
+        color: #000;
+        font-weight: bold;
+      }
+      button:hover {
+        background: #2ecc71;
+        color: #fff;
+      }
+      input[type="text"]#input {
+        flex: 1;
+      }
+      .row input {
+        flex: 1;
+      }
+
+      #messages::-webkit-scrollbar {
+        width: 10px;
+      }
+      #messages::-webkit-scrollbar-thumb {
+        background: #00ff9f;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>🛸 Rick & Morty Interdimensional Chat</header>
+    <main>
+      <div id="characters">Carregando personagens...</div>
+
+      <div class="row">
+        <input id="room" placeholder="Dimensão/Sala (ex: C-137)" />
+        <button id="connectBtn">Conectar</button>
+      </div>
+
+      <div id="messages"></div>
+
+      <form id="form" autocomplete="off">
+        <input id="input" type="text" placeholder="Digite sua mensagem multiversal..." />
+        <button>Enviar</button>
+      </form>
+    </main>
+
+    <script>
+      const $room = document.getElementById('room');
+      const $messages = document.getElementById('messages');
+      const $form = document.getElementById('form');
+      const $input = document.getElementById('input');
+      const $connectBtn = document.getElementById('connectBtn');
+      const $characters = document.getElementById('characters');
+
+      let ws = null;
+      let user = JSON.parse(localStorage.getItem('user')) || null;
+
+      $room.value = localStorage.getItem('room') || 'C-137';
+
+      // --- Funções do chat ---
+      function appendMessage(item) {
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `
+          ${item.avatar ? `<img src="${item.avatar}" />` : ''}
+          <div>
+            <div class="meta">[${new Date(item.created_at).toLocaleTimeString()}] <strong>${item.username}</strong> em <em>${item.room}</em></div>
+            <div>${item.content}</div>
+          </div>
+        `;
+        $messages.appendChild(div);
+        $messages.scrollTop = $messages.scrollHeight;
+      }
+
+      function appendHistory(items) {
+        $messages.innerHTML = '';
+        items.forEach(appendMessage);
+      }
+
+      function connect() {
+        const room = ($room.value || 'C-137').trim();
+        if (!room) return alert('Informe a sala/dimensão');
+        if (!user) return alert('Escolha um personagem antes de conectar!');
+
+        localStorage.setItem('room', room);
+
+        const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const url = `${wsProto}://${location.host}/ws/${encodeURIComponent(room)}`;
+        ws = new WebSocket(url);
+
+        ws.onmessage = (evt) => {
+          const data = JSON.parse(evt.data);
+          if (data.type === 'history') appendHistory(data.items || []);
+          else if (data.type === 'message') appendMessage(data.item);
+        };
+
+        ws.onopen = () => console.log('🛸 Conectado ao multiverso');
+        ws.onclose = () => console.log('💥 Conexão encerrada');
+        ws.onerror = (e) => console.error('⚠️ Erro WS', e);
+      }
+
+      $connectBtn.addEventListener('click', () => {
+        if (ws) ws.close();
+        connect();
+      });
+
+      $form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const content = $input.value.trim();
+        if (!content || !ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({ content, username: user.name, avatar: user.avatar }));
+        $input.value = '';
+      });
+
+      // --- Carregar personagens da API ---
+      async function loadCharacters() {
+        const res = await fetch('https://rickandmortyapi.com/api/character/?page=1');
+        const data = await res.json();
+        $characters.innerHTML = '';
+        data.results.forEach(ch => {
+          const div = document.createElement('div');
+          div.className = 'char';
+          div.innerHTML = `<img src="${ch.image}" /><span>${ch.name}</span>`;
+          div.addEventListener('click', () => {
+            user = { name: ch.name, avatar: ch.image };
+            localStorage.setItem('user', JSON.stringify(user));
+            document.querySelectorAll('.char').forEach(c=>c.classList.remove('selected'));
+            div.classList.add('selected');
+            alert(`Personagem escolhido: ${ch.name}`);
+          });
+          $characters.appendChild(div);
+        });
+      }
+
+      loadCharacters();
+    </script>
+  </body>
+</html>
