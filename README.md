@@ -18,9 +18,6 @@
 ## 📸 Como ficou o projeto
 
 ![Chat Multiverso Rick & Morty](./screenshot.png)
-
-> Substitua `screenshot.png` pela captura real do seu chat.
-
 ---
 
 ## ⚡ Tecnologias Utilizadas
