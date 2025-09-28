@@ -81,4 +81,3 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 * O **perfil** é salvo localmente no navegador (`localStorage`).
 * Você pode **entrar em salas públicas** ou **criar salas privadas** com senha.
-* Ideal para experimentos, aprendizado de WebSockets e MongoDB.
