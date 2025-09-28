@@ -1,16 +1,42 @@
+from pydantic import BaseModel, Field, validator
 from datetime import datetime, timezone
 from typing import Optional
-from pydantic import BaseModel, Field
 from bson import ObjectId
 
+# Pydantic helpers
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, ObjectId):
+            return v
+        return ObjectId(str(v))
+
+
+# Message models
 class MessageIn(BaseModel):
     username: str = Field(..., min_length=1, max_length=50)
     content: str = Field(..., min_length=1, max_length=1000)
+    avatar: Optional[str] = None  # URL of character avatar
 
-class MessageOut(MessageIn):
+    @validator("username", pre=True, always=True)
+    def clean_username(cls, v):
+        return (v or "anon").strip()[:50]
+
+    @validator("content", pre=True, always=True)
+    def clean_content(cls, v):
+        return (v or "").strip()[:1000]
+
+class MessageOut(BaseModel):
     id: str
     room: str
-    created_at: datetime
+    username: str
+    content: str
+    avatar: Optional[str] = None
+    created_at: str
 
 def iso(dt: datetime) -> str:
     if dt.tzinfo is None:
@@ -28,3 +54,18 @@ def serialize(doc: dict) -> dict:
         "content": doc["content"],
         "created_at": iso(doc["created_at"]),
     }
+    
+# Room models
+class RoomIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    is_private: bool = False
+    password: Optional[str] = None
+
+    @validator("name", pre=True, always=True)
+    def clean_name(cls, v):
+        return (v or "").strip()[:100]
+
+# User profile model (saved profile)
+class UserProfile(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    avatar: Optional[str] = None
