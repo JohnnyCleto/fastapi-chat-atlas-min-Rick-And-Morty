@@ -6,34 +6,36 @@
   <title>Chat — Multiverso Rick & Morty</title>
   <style>
     /* ==============================
-       Variáveis de cores temáticas
+       Variáveis globais
        ============================== */
     :root {
-      --bg: #0d0f1a;              /* fundo escuro espacial */
-      --sidebar-bg: #11132e;      /* barra lateral */
-      --card-bg: #1a1c3d;         /* bolhas e cards */
-      --accent: #39ff14;          /* verde neon Rick */
-      --accent-hover: #00ff9f;    /* hover botão */
-      --text: #e0f7fa;            /* texto claro */
-      --muted: rgba(224, 247, 250, 0.6);
-      --input-bg: rgba(255, 255, 255, 0.05);
-      --input-border: rgba(57, 255, 20, 0.3);
+      --bg: #0d0f1a;
+      --sidebar-bg: #11132e;
+      --card-bg: #1a1c3d;
+      --accent: #39ff14;
+      --accent-hover: #00ff9f;
+      --text: #e0f7fa;
+      --muted: rgba(224,247,250,0.6);
+      --input-bg: rgba(255,255,255,0.05);
+      --input-border: rgba(57,255,20,0.3);
       --radius: 14px;
       --font: 'Inter', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
     }
 
     /* ==============================
-       Reset e corpo
+       Reset
        ============================== */
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
       height: 100vh;
       display: flex;
       font-family: var(--font);
-      background: linear-gradient(180deg, #0d0f1a, #05070f);
+      background: linear-gradient(180deg, var(--bg), #05070f);
       color: var(--text);
+      overflow: hidden;
     }
+
+    button, input { font-family: inherit; }
 
     /* ==============================
        Sidebar
@@ -43,25 +45,79 @@
       display: flex;
       flex-direction: column;
       padding: 24px;
-      gap: 18px;
+      gap: 20px;
       background: var(--sidebar-bg);
-      box-shadow: 6px 0 40px rgba(0,0,0,0.5);
+      box-shadow: 6px 0 30px rgba(0,0,0,0.6);
+      border-right: 1px solid rgba(255,255,255,0.05);
+      animation: fadeInLeft 0.6s ease;
     }
 
     .sidebar h2 {
-      margin: 0 0 12px 0;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      color: #39ff14;
-      text-shadow: 0 0 6px #39ff14;
+      color: var(--accent);
+      text-shadow: 0 0 8px var(--accent);
+      margin-bottom: 8px;
     }
 
+    /* Criar sala */
+    .room-create-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .room-create-group input[type="text"],
+    .room-create-group input[type="password"] {
+      flex: 1 1 auto;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text);
+      transition: 0.3s;
+    }
+
+    .room-create-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      background: rgba(57,255,20,0.08);
+    }
+
+    .room-create-group label {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .room-create-group button {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--accent);
+      color: #0d0f1a;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 6px var(--accent);
+    }
+
+    .room-create-group button:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 12px var(--accent-hover);
+    }
+
+    /* Lista de salas */
     .rooms {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       overflow-y: auto;
-      padding-right: 4px;
+      padding-right: 6px;
+      flex: 1;
     }
 
     .room {
@@ -70,28 +126,27 @@
       background: rgba(57, 255, 20, 0.05);
       cursor: pointer;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background 0.2s, transform 0.1s;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.25s ease;
       border: 1px solid rgba(57, 255, 20, 0.3);
     }
 
     .room:hover {
       background: rgba(57, 255, 20, 0.15);
-      transform: translateX(2px);
+      transform: translateX(4px);
+      box-shadow: 0 4px 14px rgba(57,255,20,0.3);
     }
 
     .room .name { font-weight: 600; }
     .room .meta { font-size: 12px; color: var(--muted); }
 
-    /* ==============================
-       Perfil
-       ============================== */
+    /* Perfil */
     .profile {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
     .profile img {
@@ -100,8 +155,11 @@
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid var(--accent);
-      box-shadow: 0 0 8px var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 3s infinite;
     }
+
+    .small { font-size: 12px; color: var(--muted); }
 
     /* ==============================
        Main content
@@ -112,23 +170,20 @@
       flex-direction: column;
       padding: 24px;
       gap: 16px;
+      animation: fadeIn 0.6s ease;
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
     }
 
     .topbar h2 {
-      margin: 0;
-      font-size: 20px;
-      color: #39ff14;
-      text-shadow: 0 0 6px #39ff14;
+      font-size: 22px;
+      color: var(--accent);
+      text-shadow: 0 0 8px var(--accent);
     }
-
-    .small { font-size: 12px; color: var(--muted); }
 
     /* ==============================
        Messages
@@ -139,40 +194,39 @@
       padding: 20px;
       border-radius: var(--radius);
       background: linear-gradient(180deg, rgba(57,255,20,0.02), rgba(0,0,0,0));
+      scroll-behavior: smooth;
     }
 
     .msg {
       display: flex;
       gap: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       align-items: flex-start;
+      animation: fadeInUp 0.4s ease;
     }
 
     .msg img {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      object-fit: cover;
       border: 1px solid var(--accent);
     }
 
     .bubble {
-      display: inline-block;           /* bolha se ajusta ao conteúdo */
       padding: 12px 16px;
       border-radius: var(--radius);
       background: var(--card-bg);
       line-height: 1.5;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      transition: background 0.2s, box-shadow 0.2s;
       border: 1px solid rgba(57,255,20,0.3);
-      word-wrap: break-word;           /* quebra palavras longas */
-      max-width: 80%;                  /* opcional: limita para não quebrar o layout */
-}
-
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      max-width: 75%;
+      transition: all 0.25s ease;
+    }
 
     .bubble:hover {
-      box-shadow: 0 4px 12px rgba(57,255,20,0.6);
-      background: rgba(36, 39, 78, 0.9);
+      box-shadow: 0 6px 14px rgba(57,255,20,0.5);
+      background: rgba(36,39,78,0.95);
+      transform: scale(1.02);
     }
 
     .metaRow {
@@ -182,11 +236,12 @@
     }
 
     /* ==============================
-       Composer (input)
+       Composer
        ============================== */
     .composer {
       display: flex;
       gap: 12px;
+      align-items: center;
     }
 
     .composer input {
@@ -197,61 +252,57 @@
       background: var(--input-bg);
       color: var(--text);
       outline: none;
-      transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
     }
 
     .composer input:focus {
       border-color: var(--accent);
-      background: rgba(57, 255, 20, 0.08);
+      background: rgba(57,255,20,0.08);
       box-shadow: 0 0 8px var(--accent);
     }
 
     .composer button {
-      padding: 14px 20px;
+      padding: 14px 22px;
       border-radius: var(--radius);
       border: none;
       background: var(--accent);
       color: #0d0f1a;
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-      box-shadow: 0 0 6px var(--accent);
+      transition: all 0.25s ease;
+      box-shadow: 0 0 8px var(--accent);
     }
 
     .composer button:hover {
       background: var(--accent-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 0 12px var(--accent-hover);
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 0 14px var(--accent-hover);
     }
 
     /* ==============================
-       Botões menores
+       Animações
        ============================== */
-    button {
-      font-family: var(--font);
-      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-    }
-
-    button:hover { transform: translateY(-1px); }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 8px var(--accent); } 50% { box-shadow: 0 0 20px var(--accent-hover); } }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <div>
-      <h2>Salas</h2>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="newRoomName" placeholder="Criar sala..." />
-        <button id="create">Criar</button>
-      </div>
+    <h2>Salas</h2>
+    <div class="room-create-group">
+      <input id="newRoomName" placeholder="Nome da sala" type="text"/>
+      <input id="newRoomPass" placeholder="Senha (opcional)" type="password"/>
+      <label><input type="checkbox" id="newRoomPrivate"/> Privada</label>
+      <button id="create">Criar</button>
     </div>
 
     <div class="rooms" id="rooms"></div>
 
     <div style="margin-top:auto">
       <div class="small">Perfil</div>
-      <div class="profile" id="profileBox">
-        <!-- avatar + name -->
-      </div>
+      <div class="profile" id="profileBox"></div>
       <div style="margin-top:8px">
         <button id="backBtn">Voltar / Trocar Perfil</button>
       </div>
@@ -270,7 +321,7 @@
     <div class="messages" id="messages"></div>
 
     <div class="composer">
-      <input id="input" placeholder="Digite sua mensagem..." />
+      <input id="input" placeholder="Digite sua mensagem..."/>
       <button id="send">Enviar</button>
     </div>
   </div>

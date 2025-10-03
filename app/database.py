@@ -4,9 +4,9 @@ from .config import MONGO_URL, MONGO_DB
 
 _client: Optional[AsyncIOMotorClient] = None
 
-def get_db():
+def get_db() -> AsyncIOMotorDatabase:
     """
-    Retorna a instância do banco de dados MongoDB.
+    Retorna a instância do MongoDB.
     Inicializa o cliente se necessário.
     """
     global _client
